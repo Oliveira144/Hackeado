@@ -6,7 +6,6 @@ class CasinoAnalyzer:
     def __init__(self, history: List[str]):
         self.results = history
 
-    # --- Funções de análise de padrões ---
     def analyze_micro_patterns(self) -> List[Dict[str, Any]]:
         patterns = []
         if len(self.results) < 6:
@@ -83,7 +82,6 @@ class CasinoAnalyzer:
                 imbalance = abs(c_count - v_count)
                 balance_ratio = imbalance / window_size
 
-                # Detectar equilíbrio artificial próximo de 50/50
                 if balance_ratio < 0.1 and window_size >= 15:
                     patterns.append({
                         'type': 'artificial_balance',
@@ -96,7 +94,6 @@ class CasinoAnalyzer:
                         'predictability': 85
                     })
 
-                # Detectar compensação pendente - desequilíbrio forte
                 if balance_ratio > 0.4:
                     underrepresented = 'C' if c_count < v_count else 'V'
                     patterns.append({
@@ -136,7 +133,6 @@ class CasinoAnalyzer:
                 before = results[max(0, tie_pos-3):tie_pos]
                 after = results[tie_pos+1:tie_pos+4]
 
-                # Empate após sequência
                 if len(before) >= 2 and before[-1] == before[-2] and before[-1] != 'E':
                     patterns.append({
                         'type': 'strategic_tie_after_sequence',
@@ -150,7 +146,6 @@ class CasinoAnalyzer:
                         'predictability': 75
                     })
 
-                # Empate antes de reversão
                 if len(after) >= 2 and len(before) >= 1 and before[-1] != 'E' and after[0] != 'E':
                     before_color = before[-1]
                     after_color = after[0]
@@ -169,7 +164,6 @@ class CasinoAnalyzer:
 
         return patterns
 
-    # --- Avaliação de risco ---
     def assess_risk(self, patterns: List[Dict[str, Any]]) -> Dict[str, Any]:
         risk_score = 0
         risk_factors = []
@@ -205,7 +199,6 @@ class CasinoAnalyzer:
 
         return {'level': level, 'score': min(risk_score, 100), 'factors': risk_factors}
 
-    # --- Análise de manipulação ---
     def detect_manipulation(self, patterns: List[Dict[str, Any]], risk: Dict[str, Any]) -> Dict[str, Any]:
         manipulation_score = 0
         manipulation_signs = []
@@ -232,7 +225,6 @@ class CasinoAnalyzer:
 
         return {'level': level, 'score': min(manipulation_score, 100), 'signs': manipulation_signs}
 
-    # --- Predição ---
     def make_prediction(self, patterns: List[Dict[str, Any]], risk: Dict[str, Any], manipulation: Dict[str, Any]) -> Dict[str, Any]:
         prediction = {'color': None, 'confidence': 0, 'reasoning': '', 'strategy': 'AGUARDAR MELHORES CONDIÇÕES'}
 
@@ -246,7 +238,6 @@ class CasinoAnalyzer:
             prediction['strategy'] = 'AGUARDAR NORMALIZAÇÃO'
             return prediction
 
-        # Tentativa de prever com base em compensação pendente
         compensation_pattern = next((p for p in patterns if p['type'] == 'compensation_pending'), None)
         if compensation_pattern and risk['level'] == 'low' and manipulation['level'] == 'low':
             color = compensation_pattern['favored_color']
@@ -259,7 +250,6 @@ class CasinoAnalyzer:
             })
             return prediction
 
-        # Predição com base no padrão cíclico
         cycle_pattern = next((p for p in patterns if p['type'] == 'hidden_cycle' and p.get('repetitions', 0) >= 2), None)
         if cycle_pattern and risk['level'] == 'low' and manipulation['level'] == 'low':
             next_color = self.predict_next_in_cycle(cycle_pattern['pattern'])
@@ -272,7 +262,6 @@ class CasinoAnalyzer:
                 })
                 return prediction
 
-        # Predição com base na cor predominante simples
         non_empate = [r for r in self.results if r != 'E']
         if not non_empate:
             return prediction
@@ -289,14 +278,11 @@ class CasinoAnalyzer:
         return prediction
 
     def predict_next_in_cycle(self, pattern: str) -> Optional[str]:
-        # Tentar prever o próximo resultado cíclico para o próximo índice
         non_empate = [r for r in self.results if r != 'E']
         if not pattern or not non_empate:
             return None
         cycle_len = len(pattern)
-        # Encontrar a posição atual na repetição do ciclo
         for i in range(len(non_empate)):
-            # verificar correspondência parcial
             expected = pattern[i % cycle_len]
             if non_empate[i] != expected:
                 break
@@ -304,28 +290,42 @@ class CasinoAnalyzer:
         return pattern[pos] if pos < cycle_len else None
 
 
-# --- Interface Streamlit ---
 def main():
     st.title("Casino Analyzer - Análise Avançada de Padrões")
-    st.markdown("""
-    Insira o histórico de resultados no formato:  
-    **C** (Cor do jogador), **V** (Cor do banqueiro), **E** (Empate)  
-    Exemplo: C C V V C V E C V  
-    """)
 
-    input_text = st.text_area("Histórico (separado por espaços ou vírgulas)", height=120)
-    if not input_text.strip():
-        st.info("Por favor, insira o histórico para análise.")
+    # Inicializar histórico na sessão
+    if 'history' not in st.session_state:
+        st.session_state.history = []
+
+    # Layout dos botões e input
+    col1, col2, col3 = st.columns([2,2,2])
+
+    with col1:
+        add_res = st.selectbox("Adicionar resultado", options=['C', 'V', 'E'], key='add_res')
+
+    with col2:
+        if st.button("Adicionar ao Histórico"):
+            st.session_state.history.append(add_res)
+
+    with col3:
+        if st.button("Limpar Histórico"):
+            st.session_state.history = []
+
+    if st.button("Apagar Último Resultado"):
+        if st.session_state.history:
+            st.session_state.history.pop()
+
+    # Exibir histórico invertido (mais recente à esquerda)
+    if st.session_state.history:
+        st.write("### Histórico Atual (Mais recente à esquerda):")
+        color_map = {'C': '🟦', 'V': '🟥', 'E': '🟨'}
+        history_display = ' '.join(color_map.get(r, '⬜') + r for r in reversed(st.session_state.history))
+        st.markdown(history_display)
+    else:
+        st.info("Adicione resultados para iniciar a análise.")
         return
 
-    # Processar entrada
-    raw_results = [r.strip().upper() for r in input_text.replace(',', ' ').split()]
-    valid_results = {'C', 'V', 'E'}
-    if any(r not in valid_results for r in raw_results):
-        st.error("Apenas use os caracteres C, V e E para representar os resultados.")
-        return
-
-    analyzer = CasinoAnalyzer(raw_results)
+    analyzer = CasinoAnalyzer(st.session_state.history)
 
     with st.spinner('Analisando dados...'):
         micro_patterns = analyzer.analyze_micro_patterns()
@@ -339,7 +339,6 @@ def main():
         manipulation = analyzer.detect_manipulation(patterns, risk)
         prediction = analyzer.make_prediction(patterns, risk, manipulation)
 
-    # Exibir resultados
     st.header("Padrões Detectados")
     if patterns:
         for p in patterns:
