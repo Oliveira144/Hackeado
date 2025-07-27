@@ -291,38 +291,38 @@ class CasinoAnalyzer:
 
 
 def main():
-    st.title("Casino Analyzer - Análise Avançada de Padrões")
+    st.title("Casino Analyzer - Insira os Resultados Rapidamente")
 
-    # Inicializar histórico na sessão
+    # Histórico persistente na sessão
     if 'history' not in st.session_state:
         st.session_state.history = []
 
-    # Layout dos botões e input
-    col1, col2, col3 = st.columns([2,2,2])
+    # Botões dinâmicos coloridos para inserir resultados rapidamente
+    col_c, col_v, col_e = st.columns(3)
 
-    with col1:
-        add_res = st.selectbox("Adicionar resultado", options=['C', 'V', 'E'], key='add_res')
+    if col_c.button("C (Jogador)", key="btn_c"):
+        st.session_state.history.append('C')
+    if col_v.button("V (Banqueiro)", key="btn_v"):
+        st.session_state.history.append('V')
+    if col_e.button("E (Empate)", key="btn_e"):
+        st.session_state.history.append('E')
 
-    with col2:
-        if st.button("Adicionar ao Histórico"):
-            st.session_state.history.append(add_res)
-
-    with col3:
-        if st.button("Limpar Histórico"):
-            st.session_state.history = []
-
-    if st.button("Apagar Último Resultado"):
+    # Botões para limpar e apagar último resultado
+    col_clear, col_undo, _ = st.columns([2, 2, 1])
+    if col_clear.button("Limpar Histórico"):
+        st.session_state.history = []
+    if col_undo.button("Apagar Último Resultado"):
         if st.session_state.history:
             st.session_state.history.pop()
 
-    # Exibir histórico invertido (mais recente à esquerda)
+    # Exibição do histórico invertido com cores (mais recente à esquerda)
     if st.session_state.history:
         st.write("### Histórico Atual (Mais recente à esquerda):")
         color_map = {'C': '🟦', 'V': '🟥', 'E': '🟨'}
         history_display = ' '.join(color_map.get(r, '⬜') + r for r in reversed(st.session_state.history))
         st.markdown(history_display)
     else:
-        st.info("Adicione resultados para iniciar a análise.")
+        st.info("Clique nos botões acima para inserir resultados e iniciar a análise.")
         return
 
     analyzer = CasinoAnalyzer(st.session_state.history)
