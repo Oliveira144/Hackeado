@@ -115,7 +115,7 @@ class CasinoAnalyzer:
         return patterns
 
     def analyze_strategic_ties(self) -> List[Dict[str, Any]]:
-        # Se seu jogo não trabalha com empates, pode retornar vazio
+        # Se não usar empate, pode retornar lista vazia
         return []
 
     def assess_risk(self, patterns: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -138,6 +138,9 @@ class CasinoAnalyzer:
             elif pattern['type'] == 'intentional_break':
                 risk_score += 50
                 risk_factors.append('💥 Quebra intencional detectada')
+            elif pattern['type'].startswith('strategic_tie'):
+                risk_score += 40
+                risk_factors.append('🔶 Empate estratégico detectado')
 
         if risk_score >= 80:
             level = 'critical'
@@ -310,7 +313,9 @@ def main():
 
     st.header("Predição")
     if prediction['color']:
-        st.write(f"Aposta sugerida: **{prediction['color']}**")
+        color_map = {'V': '🔴', 'C': '🔵', 'E': '🟡'}
+        emoji_color = color_map.get(prediction['color'], prediction['color'])
+        st.write(f"Aposta sugerida: **{emoji_color}**")
         st.write(f"Confiança: **{prediction['confidence']:.1f}%**")
         st.write(f"Razão: {prediction['reasoning']}")
         st.write(f"Estratégia: {prediction['strategy']}")
@@ -321,4 +326,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-        
